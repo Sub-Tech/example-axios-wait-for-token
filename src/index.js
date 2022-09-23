@@ -48,7 +48,11 @@ const _myAxioSuccessFn = (r) => {
 };
 
 const onRequest = async (config) => {
+  // before each request
   if (config.requires_auth) {
+    const authToken = await authStorage.getToken();
+    // auth header here incase we are retrying 500s and it is out of date on retries
+    config.headers.authorization = `Bearer ${authToken}`,
     console.log("pre request", config.data.request_number)
     const time = await authStorage.getExpiresAt()
     console.log(`getting expires at for ${config.url} ${config.data.request_number}`)
@@ -82,15 +86,10 @@ axios.interceptors.request.use(async (config) => await onRequest(config));
 axios.interceptors.response.use(_myAxioSuccessFn, _myAxiosErrFn);
 
 async function apiClient(requestConfig) {
-  const authToken = await authStorage.getToken();
-
   const defaultConfig = {
     baseURL: "./",
     method: "get",
     requires_auth: false,
-    headers: {
-      authorization: 'Bearer ' + authToken,
-    }
   };
 
   const finalRequestConfig = {
@@ -118,7 +117,10 @@ async function apiClient(requestConfig) {
 
 // simulated multiple page layer auth requests
 [1,2,3].map((n) => {
+  // console.time(`loopOf${n}`)
   setTimeout(() => {
+    // console.timeEnd(`loopOf${n}`)
+    console.time(`firing request ${n}`)
     console.log(`firing request ${n}`)
     apiClient({
       url: "/testApi/test.json",
@@ -128,14 +130,21 @@ async function apiClient(requestConfig) {
       }
     }).then(res => {
       console.log(`local res success ${n}`, res)
+      console.timeEnd(`firing request ${n}`)
     }).catch(err => {
+      if (err.status === 401) {
+        // redirect login
+      }
       console.log(`local catch fail ${n}`, err)
     })
-  }, 50)
+  }, 50*n)
 })
 
 ;[4,5,6].map((n) => {
+  // console.time(`loopOf${n}`)
   setTimeout(() => {
+    // console.timeEnd(`loopOf${n}`)
+    console.time(`firing request ${n}`)
     console.log(`firing request ${n}`)
     apiClient({
       url: "/testApi/test2.json",
@@ -145,10 +154,11 @@ async function apiClient(requestConfig) {
       }
     }).then(res => {
       console.log(`local res success ${n}`, res)
+      console.timeEnd(`firing request ${n}`)
     }).catch(err => {
       console.log(`local catch fail ${n}`, err)
     })
-  }, 175)
+  }, 500*n)
 })
 
 
