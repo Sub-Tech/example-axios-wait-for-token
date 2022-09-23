@@ -17,7 +17,7 @@ const authStorage = {
       authStorage.expires = dt
       setTimeout(() => {
         return res(true)
-      }, 50)
+      }, 1000)
     })
   },
   getToken: async function () {
@@ -63,7 +63,7 @@ const onRequest = async (config) => {
           const t = res.data.token
           console.log("new token is received for", config.data.request_number)
           console.log("waiting for store")
-          await authStorage.storeToken(t, new Date());
+          await authStorage.storeToken(t, new Date());  // will take 1000ms
           console.log("token stored async we can return for", config.data.request_number)
           config.headers.authorization = t;
           return config;
